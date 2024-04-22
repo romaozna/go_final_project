@@ -34,6 +34,10 @@ func main() {
 	r.Get("/api/nextdate", controller.GetNextDate)
 	r.Post("/api/task", controller.AddTask)
 	r.Get("/api/tasks", controller.GetTasks)
+	r.Get("/api/task", controller.GetTask)
+	r.Put("/api/task", controller.UpdateTask)
+	r.Post("/api/task/done", controller.MakeTaskAsDone)
+	r.Delete("/api/task", controller.DeleteTask)
 
 	serverPort := getPort()
 	log.Println(fmt.Sprintf("Адрес сервера: %d", serverPort))

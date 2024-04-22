@@ -105,9 +105,9 @@ func ValidateTask(task *model.Task) (*model.Task, error) {
 func InsertTask(task *model.Task) (int, error) {
 	taskId, err := store.InsertTask(task)
 	if err != nil {
-		return 0, errors.New("ошибка при при добавлении задачи в БД")
+		return 0, errors.New("ошибка при добавлении задачи в БД")
 	}
-	return taskId, nil
+	return taskId, err
 }
 
 func GetTasks() ([]model.Task, error) {
@@ -120,5 +120,55 @@ func GetTasks() ([]model.Task, error) {
 		tasks = []model.Task{}
 	}
 
-	return tasks, nil
+	return tasks, err
+}
+
+func GetTask(id string) (model.Task, error) {
+	task, err := store.GetTaskById(id)
+	if err != nil {
+		return model.Task{}, err
+	}
+	return task, err
+}
+
+func PutTask(task model.Task) (model.Task, error) {
+	updatedTask, err := store.UpdateTask(task)
+	if err != nil {
+		return model.Task{}, errors.New("ошибка при обновлении задачи в БД")
+	}
+	return updatedTask, err
+}
+
+func DeleteTask(id string) error {
+	err := store.DeleteTaskById(id)
+	if err != nil {
+		return errors.New("ошибка при обновлении задачи в БД")
+
+	}
+	return err
+}
+
+func CheckAsDone(id string) (model.Task, error) {
+	task, err := store.GetTaskById(id)
+	if err != nil {
+		return model.Task{}, errors.New("ошибка при получении задачи из БД")
+	}
+
+	if len(task.Repeat) == 0 {
+		err = store.DeleteTaskById(task.Id)
+		if err != nil {
+			return model.Task{}, errors.New("ошибка удаления задачи из БД")
+		}
+	} else {
+		task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
+		if err != nil {
+			return model.Task{}, errors.New("ошибка при получении следующей даты")
+		}
+
+		_, err = store.UpdateTask(task)
+		if err != nil {
+			return model.Task{}, errors.New("ошибка при обновлении задачи в БД")
+		}
+	}
+	return task, err
 }
