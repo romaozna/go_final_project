@@ -53,12 +53,11 @@ func createIndex() {
 }
 
 func InsertTask(task *model.Task) (int, error) {
-	var taskForInsert = *task
 	result, err := db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
-		sql.Named("date", taskForInsert.Date),
-		sql.Named("title", taskForInsert.Title),
-		sql.Named("comment", taskForInsert.Comment),
-		sql.Named("repeat", taskForInsert.Repeat))
+		sql.Named("date", task.Date),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat))
 	if err != nil {
 		return 0, err
 	}
@@ -69,4 +68,32 @@ func InsertTask(task *model.Task) (int, error) {
 	}
 
 	return int(id), nil
+}
+
+func GetAllTasks() ([]model.Task, error) {
+	var tasks []model.Task
+
+	rows, err := db.Query("SELECT * FROM scheduler ORDER BY date LIMIT '10'")
+	if err != nil {
+		return []model.Task{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var task model.Task
+		if err := rows.Scan(&task.Id, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
+			return []model.Task{}, err
+		}
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return []model.Task{}, err
+	}
+
+	if tasks == nil {
+		tasks = []model.Task{}
+	}
+
+	return tasks, nil
 }

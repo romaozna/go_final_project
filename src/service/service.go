@@ -109,3 +109,16 @@ func InsertTask(task *model.Task) (int, error) {
 	}
 	return taskId, nil
 }
+
+func GetTasks() ([]model.Task, error) {
+	tasks, err := store.GetAllTasks()
+	if err != nil {
+		return tasks, err
+	}
+
+	if tasks == nil {
+		tasks = []model.Task{}
+	}
+
+	return tasks, nil
+}

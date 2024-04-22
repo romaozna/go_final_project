@@ -33,6 +33,7 @@ func main() {
 	r.Mount("/", http.FileServer(http.Dir(webDir)))
 	r.Get("/api/nextdate", controller.GetNextDate)
 	r.Post("/api/task", controller.AddTask)
+	r.Get("/api/tasks", controller.GetTasks)
 
 	serverPort := getPort()
 	log.Println(fmt.Sprintf("Адрес сервера: %d", serverPort))
