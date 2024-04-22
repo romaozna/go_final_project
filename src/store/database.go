@@ -3,13 +3,14 @@ package store
 import (
 	"database/sql"
 	"log"
+	"main/src/model"
 	"os"
 	"path/filepath"
 )
 
 var db *sql.DB
 
-func getPath() string {
+func GetPath() string {
 	appPath, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
@@ -24,8 +25,8 @@ func getPath() string {
 	return dbFile
 }
 
-func openDatabase(pathToDatabase string) *sql.DB {
-	db, err := sql.Open("sqlite", pathToDatabase)
+func openDatabase(path string) *sql.DB {
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil
 	}
@@ -33,15 +34,17 @@ func openDatabase(pathToDatabase string) *sql.DB {
 	return db
 }
 
-func createTable(db *sql.DB) {
+func CreateTable(path string) {
+	db = openDatabase(path)
 	_, err := db.Exec(
 		"CREATE TABLE IF NOT EXISTS scheduler (id INTEGER PRIMARY KEY AUTOINCREMENT, date VARCHAR(8) NULL, title VARCHAR(64) NOT NULL, comment VARCHAR(255) NULL, repeat VARCHAR(128) NULL)")
 	if err != nil {
 		log.Fatal(err)
 	}
+	createIndex()
 }
 
-func createIndex(db *sql.DB) {
+func createIndex() {
 	_, err := db.Exec(
 		"CREATE INDEX IF NOT EXISTS date_idx ON scheduler (date)")
 	if err != nil {
@@ -49,18 +52,21 @@ func createIndex(db *sql.DB) {
 	}
 }
 
-func CreateDatabase() {
-	path := getPath()
-	_, err := os.Stat(path)
-
+func InsertTask(task *model.Task) (int, error) {
+	var taskForInsert = *task
+	result, err := db.Exec("INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)",
+		sql.Named("date", taskForInsert.Date),
+		sql.Named("title", taskForInsert.Title),
+		sql.Named("comment", taskForInsert.Comment),
+		sql.Named("repeat", taskForInsert.Repeat))
 	if err != nil {
-		_, err := os.Create(path)
-		if err != nil {
-			log.Fatal(err)
-		}
+		return 0, err
 	}
 
-	db = openDatabase(path)
-	createTable(db)
-	createIndex(db)
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
 }

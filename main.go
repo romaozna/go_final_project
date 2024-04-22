@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"log"
-	"main/src/store"
+	"main/src/controller"
+	"main/src/service"
 	"net/http"
 	"os"
 	"strconv"
@@ -25,11 +26,13 @@ func getPort() int {
 }
 
 func main() {
-	store.CreateDatabase()
+	service.CreateDatabase()
 	webDir := "./web"
 
 	r := chi.NewRouter()
 	r.Mount("/", http.FileServer(http.Dir(webDir)))
+	r.Get("/api/nextdate", controller.GetNextDate)
+	r.Post("/api/task", controller.AddTask)
 
 	serverPort := getPort()
 	log.Println(fmt.Sprintf("Адрес сервера: %d", serverPort))
