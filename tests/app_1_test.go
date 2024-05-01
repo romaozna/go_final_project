@@ -22,6 +22,7 @@ func getURL(path string) string {
 		}
 	}
 	path = strings.ReplaceAll(strings.TrimPrefix(path, `../web/`), `\`, `/`)
+	//path = strings.TrimPrefix(strings.ReplaceAll(path, `\`, `/`), `../web/`)
 	return fmt.Sprintf("http://localhost:%d/%s", port, path)
 }
 
