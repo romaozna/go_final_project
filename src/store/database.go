@@ -6,28 +6,21 @@ import (
 	"log"
 	"main/src/model"
 	"os"
-	"path/filepath"
 )
 
 var db *sql.DB
 
 func GetPath() string {
-	appPath, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
+	dbFile := "scheduler.db"
 	envFile := os.Getenv("TODO_DBFILE")
 	if len(envFile) > 0 {
 		dbFile = envFile
 	}
-
 	return dbFile
 }
 
 func CreateTable(path string) {
-	db = openDatabase(path)
+	db, _ = openDatabase(path)
 	_, err := db.Exec(
 		"CREATE TABLE IF NOT EXISTS scheduler (id INTEGER PRIMARY KEY AUTOINCREMENT, date VARCHAR(8) NULL, title VARCHAR(64) NOT NULL, comment VARCHAR(255) NULL, repeat VARCHAR(128) NULL)")
 	if err != nil {
@@ -105,10 +98,11 @@ func UpdateTask(task model.Task) (model.Task, error) {
 	}
 
 	if rowsAffected == 0 {
-		return model.Task{}, errors.New("ошибка при обновлении задачи")
+		return model.Task{}, errors.New("0 строчек было обновлено")
 	}
+	updatedTask, _ := GetTaskById(task.Id)
 
-	return task, nil
+	return updatedTask, nil
 }
 
 func DeleteTaskById(id string) error {
@@ -124,19 +118,19 @@ func DeleteTaskById(id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("ошибка при удалении задачи")
+		return errors.New("0 строчек было удалено")
 	}
 
 	return err
 }
 
-func openDatabase(path string) *sql.DB {
+func openDatabase(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return db
+	return db, nil
 }
 
 func createIndex() {

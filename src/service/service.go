@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"main/src/model"
 	"main/src/store"
@@ -77,12 +78,19 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 }
 
 func ValidateTask(task *model.Task) (*model.Task, error) {
-	if len(task.Date) == 0 {
+	if task.Id != "" {
+		_, err := strconv.Atoi(task.Id)
+		if err != nil {
+			return task, fmt.Errorf("неверный формат id: %w", err)
+		}
+	}
+
+	if task.Date == "" {
 		task.Date = time.Now().Format(DateFormat)
 	} else {
 		date, err := time.Parse(DateFormat, task.Date)
 		if err != nil {
-			return task, errors.New("неверный формат даты")
+			return task, fmt.Errorf("неверный формат даты: %w", err)
 		}
 
 		if date.Before(time.Now()) {
@@ -90,7 +98,7 @@ func ValidateTask(task *model.Task) (*model.Task, error) {
 		}
 	}
 
-	if len(task.Title) == 0 {
+	if task.Title == "" {
 		return task, errors.New("заголовок задачи не может быть пустым")
 	}
 
@@ -105,7 +113,7 @@ func ValidateTask(task *model.Task) (*model.Task, error) {
 func InsertTask(task *model.Task) (int, error) {
 	taskId, err := store.InsertTask(task)
 	if err != nil {
-		return 0, errors.New("ошибка при добавлении задачи в БД")
+		return 0, fmt.Errorf("ошибка при добавлении задачи: %w", err)
 	}
 	return taskId, err
 }
@@ -134,7 +142,7 @@ func GetTask(id string) (model.Task, error) {
 func PutTask(task model.Task) (model.Task, error) {
 	updatedTask, err := store.UpdateTask(task)
 	if err != nil {
-		return model.Task{}, errors.New("ошибка при обновлении задачи в БД")
+		return model.Task{}, fmt.Errorf("ошибка при обновлении задачи в БД: %w", err)
 	}
 	return updatedTask, err
 }
@@ -142,7 +150,7 @@ func PutTask(task model.Task) (model.Task, error) {
 func DeleteTask(id string) error {
 	err := store.DeleteTaskById(id)
 	if err != nil {
-		return errors.New("ошибка при обновлении задачи в БД")
+		return fmt.Errorf("ошибка при удалении задачи из БД: %w", err)
 
 	}
 	return err
@@ -151,24 +159,25 @@ func DeleteTask(id string) error {
 func CheckAsDone(id string) (model.Task, error) {
 	task, err := store.GetTaskById(id)
 	if err != nil {
-		return model.Task{}, errors.New("ошибка при получении задачи из БД")
+		return model.Task{}, fmt.Errorf("ошибка при получении задачи из БД: %w", err)
 	}
 
-	if len(task.Repeat) == 0 {
+	if task.Repeat == "" {
 		err = store.DeleteTaskById(task.Id)
 		if err != nil {
-			return model.Task{}, errors.New("ошибка удаления задачи из БД")
+			return model.Task{}, fmt.Errorf("ошибка удаления задачи из БД: %w", err)
 		}
-	} else {
-		task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
-		if err != nil {
-			return model.Task{}, errors.New("ошибка при получении следующей даты")
-		}
+		return task, nil
+	}
 
-		_, err = store.UpdateTask(task)
-		if err != nil {
-			return model.Task{}, errors.New("ошибка при обновлении задачи в БД")
-		}
+	task.Date, err = NextDate(time.Now(), task.Date, task.Repeat)
+	if err != nil {
+		return model.Task{}, fmt.Errorf("ошибка при получении следующей даты: %w", err)
+	}
+
+	task, err = store.UpdateTask(task)
+	if err != nil {
+		return model.Task{}, fmt.Errorf("ошибка при обновлении задачи в БД: %w", err)
 	}
 	return task, err
 }
